@@ -1,6 +1,6 @@
 # Accessible Astro Launcher
 
-![accessible-astro-launcher](https://github.com/user-attachments/assets/placeholder-launcher-preview.png)
+<img width="1280" height="640" alt="accessible-astro-launcher" src="https://github.com/user-attachments/assets/1d6657d2-552b-436a-931b-719b7ae61dd5" /><br>
 
 [![Built with Astro](https://astro.badg.es/v2/built-with-astro/small.svg)](https://astro.build)
 
@@ -62,12 +62,12 @@ import {
 
 <Launcher id="site-launcher">
   <LauncherList>
+    <LauncherGroup label="Preferences">
+      <LauncherItem type="action" onAction="toggle-dark-mode" label="Dark mode" />
+    </LauncherGroup>
     <LauncherGroup label="Navigation">
       <LauncherItem type="navigation" href="/" label="Home" />
       <LauncherItem type="navigation" href="/about" label="About" />
-    </LauncherGroup>
-    <LauncherGroup label="Preferences">
-      <LauncherItem type="action" onAction="toggle-dark-mode" label="Dark mode" />
     </LauncherGroup>
   </LauncherList>
 </Launcher>
