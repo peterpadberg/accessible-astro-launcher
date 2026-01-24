@@ -6,8 +6,8 @@
 
 A powerful, accessible command palette/launcher component for [Astro](https://astro.build) projects. Built with keyboard-driven navigation, instant search, and full WCAG 2.2 AA compliance following the WAI-ARIA combobox pattern. Features dark mode support, preference toggles integration, modular component architecture, and extensive customization through CSS custom properties.
 
-[![LIVE DEMO](https://img.shields.io/badge/LIVE_DEMO-4ECCA3?style=for-the-badge&logo=astro&logoColor=black)](https://accessible-astro-starter.incluud.dev/) &nbsp;
-[![DOCUMENTATION](https://img.shields.io/badge/DOCUMENTATION-A682FF?style=for-the-badge&logo=astro&logoColor=black)](https://accessible-astro.incluud.dev/) &nbsp;
+[![LIVE DEMO](https://img.shields.io/badge/LIVE_DEMO-4ECCA3?style=for-the-badge&logo=astro&logoColor=black)](https://accessible-astro-launcher.incluud.dev/) &nbsp;
+[![DOCUMENTATION](https://img.shields.io/badge/DOCUMENTATION-A682FF?style=for-the-badge&logo=astro&logoColor=black)](https://accessible-astro.incluud.dev/components/launcher) &nbsp;
 [![NPM Downloads](https://img.shields.io/npm/dt/accessible-astro-launcher?style=for-the-badge&color=4ECCA3&logo=npm&logoColor=black)](https://www.npmjs.com/package/accessible-astro-launcher) &nbsp;
 [![NPM Version](https://img.shields.io/npm/v/accessible-astro-launcher?style=for-the-badge&logo=npm&logoColor=black&color=A682FF)](https://www.npmjs.com/package/accessible-astro-launcher) &nbsp;
 [![Sponsor on Open Collective](https://img.shields.io/badge/Open%20Collective-7FADF2?style=for-the-badge&logo=opencollective&logoColor=white)](https://opencollective.com/incluud) &nbsp;
