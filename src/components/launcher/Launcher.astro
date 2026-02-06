@@ -3,6 +3,9 @@
  * Launcher Component
  *
  * @description An accessible command palette/launcher dialog with keyboard navigation and search.
+ * Uses semantic HTML with proper ARIA patterns: role="switch" for toggles, native anchors for links.
+ * Focus stays on the search input while aria-activedescendant manages the active item announcement.
+ * This allows continuous typing while navigating with arrow keys.
  * Supports multiple triggers via the LauncherTrigger component's launcherId prop.
  */
 
@@ -16,6 +19,7 @@ interface Labels {
   toSelect?: string
   toNavigate?: string
   toClose?: string
+  searchHint?: string
 }
 
 interface Props {
@@ -40,22 +44,24 @@ interface Props {
 const { id, labels = {}, class: className, ...rest } = Astro.props
 
 const {
-  placeholder = 'Search or use commands...',
-  noResults = 'No results found',
+  placeholder = 'Type to search...',
+  noResults = 'No results for "{query}"',
   endOfResults = "You've reached the end of the results",
-  resultsCount = '{count} results available',
+  resultsCount = '{count} results for "{query}"',
   close = 'Close',
   clear = 'Clear',
   toSelect = 'Select',
   toNavigate = 'Navigate',
   toClose = 'Close',
+  searchHint = 'Type to filter results. Use arrow keys to navigate, Enter to select.',
 } = labels
 
 // Generate unique IDs for internal elements
 const inputId = `${id}-input`
-const listId = `${id}-list`
+const resultsId = `${id}-results`
 const titleId = `${id}-title`
 const statusId = `${id}-status`
+const hintId = `${id}-hint`
 ---
 
 <dialog
@@ -67,67 +73,35 @@ const statusId = `${id}-status`
 >
   <div class="wrapper">
     <div class="header">
-      <h2
-        id={titleId}
-        class="sr-only"
-      >
-        Launcher
-      </h2>
+      <h2 id={titleId} class="sr-only">Launcher</h2>
       <search class="search">
-        <label
-          for={inputId}
-          class="sr-only"
-          >{placeholder}</label
-        >
+        <label for={inputId} class="sr-only">{placeholder}</label>
         <input
-          type="text"
+          type="search"
           id={inputId}
           class="input"
           placeholder={placeholder}
-          role="combobox"
-          aria-controls={listId}
-          aria-autocomplete="list"
-          aria-expanded="true"
+          aria-describedby={hintId}
+          aria-controls={resultsId}
           aria-activedescendant=""
           autocomplete="off"
           spellcheck="false"
         />
-        <button
-          type="button"
-          class="clear"
-          hidden
-          >{clear}</button
-        >
+        <button type="button" class="clear" hidden>{clear}</button>
       </search>
-      <button
-        type="button"
-        class="close"
-        >{close}</button
-      >
+      <button type="button" class="close">{close}</button>
     </div>
 
-    <div
-      class="content"
-      tabindex="-1"
-    >
-      <div
-        id={statusId}
-        class="sr-only"
-        role="status"
-        data-template={resultsCount}
-      >
-      </div>
-      <div
-        class="results"
-        id={listId}
-      >
+    <div class="content" tabindex="-1">
+      <p id={hintId} class="sr-only">
+        {searchHint}
+      </p>
+      <div id={statusId} class="sr-only" role="status" data-template={resultsCount}></div>
+      <div class="results" id={resultsId}>
         <slot />
         <p class="end-of-results">{endOfResults}</p>
       </div>
-      <div
-        class="no-results"
-        hidden
-      >
+      <div class="no-results" hidden data-template={noResults}>
         <p>{noResults}</p>
       </div>
     </div>
@@ -225,14 +199,14 @@ const statusId = `${id}-status`
 
 <script>
   /**
-   * Interface for the launcher items
+   * Interface for launcher items (switches and links)
    */
-  interface LauncherItem {
-    element: HTMLAnchorElement | HTMLButtonElement // The inner interactive element
-    wrapper: HTMLLIElement // The parent <li> for visibility control
+  interface LauncherItemData {
+    element: HTMLAnchorElement | HTMLButtonElement
+    wrapper: HTMLElement
     label: string
     keywords: string[]
-    type: 'navigation' | 'action'
+    type: 'switch' | 'link'
     href?: string
     action?: string
   }
@@ -249,7 +223,7 @@ const statusId = `${id}-status`
   const activeTriggers = new Map<HTMLDialogElement, HTMLButtonElement | null>()
 
   /**
-   * Detect the operating for the keyboard shortcut activation
+   * Detect the operating system for keyboard shortcut activation
    */
   const detectOS = (): 'mac' | 'windows' | 'other' => {
     const userAgent = navigator.userAgent.toLowerCase()
@@ -260,33 +234,51 @@ const statusId = `${id}-status`
   }
 
   /**
-   * Get all launcher items from the dialog
+   * Get all launcher items from the dialog (both switches and links)
    */
-  const getItems = (dialog: HTMLDialogElement): LauncherItem[] => {
-    const itemElements = dialog.querySelectorAll<HTMLAnchorElement | HTMLButtonElement>('.item')
+  const getItems = (dialog: HTMLDialogElement): LauncherItemData[] => {
+    const switches = dialog.querySelectorAll<HTMLButtonElement>('.launcher-switch')
+    const links = dialog.querySelectorAll<HTMLAnchorElement>('.launcher-link')
 
-    return Array.from(itemElements).map((element) => ({
-      element: element,
-      wrapper: element.closest('.launcher-item') as HTMLLIElement,
+    const switchItems: LauncherItemData[] = Array.from(switches).map((element) => ({
+      element,
+      wrapper: element.closest('.launcher-switch-wrapper') as HTMLElement,
       label: element.dataset.label || '',
-      keywords: element.dataset.keywords?.split(',') || [],
-      type: element.dataset.type as 'navigation' | 'action',
-      href: element.dataset.href,
+      keywords: element.dataset.keywords?.split(',').filter(Boolean) || [],
+      type: 'switch' as const,
       action: element.dataset.action,
     }))
+
+    const linkItems: LauncherItemData[] = Array.from(links).map((element) => ({
+      element,
+      wrapper: element.closest('.launcher-link-wrapper') as HTMLElement,
+      label: element.dataset.label || '',
+      keywords: element.dataset.keywords?.split(',').filter(Boolean) || [],
+      type: 'link' as const,
+      href: element.dataset.href,
+    }))
+
+    // Return items in DOM order
+    const allElements = dialog.querySelectorAll<HTMLElement>('.launcher-switch, .launcher-link')
+    return Array.from(allElements).map((el) => {
+      if (el.classList.contains('launcher-switch')) {
+        return switchItems.find((item) => item.element === el)!
+      }
+      return linkItems.find((item) => item.element === el)!
+    })
   }
 
   /**
    * Get visible (not hidden) items
    */
-  const getVisibleItems = (dialog: HTMLDialogElement): LauncherItem[] => {
-    return getItems(dialog).filter((item) => !item.wrapper.hidden)
+  const getVisibleItems = (dialog: HTMLDialogElement): LauncherItemData[] => {
+    return getItems(dialog).filter((item) => item.wrapper && !item.wrapper.hidden)
   }
 
   /**
    * Simple fuzzy search matching
    */
-  const matchesSearch = (item: LauncherItem, query: string): boolean => {
+  const matchesSearch = (item: LauncherItemData, query: string): boolean => {
     const searchTerms = query.toLowerCase().split(/\s+/)
     const searchableText = [item.label, ...item.keywords].join(' ').toLowerCase()
 
@@ -296,12 +288,12 @@ const statusId = `${id}-status`
   /**
    * Update the status element for screen readers
    */
-  const updateStatus = (dialog: HTMLDialogElement, count: number): void => {
+  const updateStatus = (dialog: HTMLDialogElement, count: number, query: string): void => {
     const statusElement = dialog.querySelector<HTMLElement>('[role="status"]')
     if (!statusElement) return
 
-    const template = statusElement.dataset.template || '{count} results available'
-    statusElement.textContent = template.replace('{count}', String(count))
+    const template = statusElement.dataset.template || '{count} results for "{query}"'
+    statusElement.textContent = template.replace('{count}', String(count)).replace('{query}', query)
   }
 
   /**
@@ -310,7 +302,8 @@ const statusId = `${id}-status`
   const filterItems = (dialog: HTMLDialogElement, query: string): void => {
     const items = getItems(dialog)
     const noResultsElement = dialog.querySelector<HTMLElement>('.no-results')
-    const groups = dialog.querySelectorAll<HTMLElement>('.launcher-group')
+    const noResultsText = noResultsElement?.querySelector<HTMLElement>('p')
+    const groups = dialog.querySelectorAll<HTMLElement>('.launcher-preferences, .launcher-nav')
     const endOfResultsElement = dialog.querySelector<HTMLElement>('.end-of-results')
 
     let visibleCount = 0
@@ -318,7 +311,9 @@ const statusId = `${id}-status`
     items.forEach((item) => {
       const matches = !query || matchesSearch(item, query)
 
-      item.wrapper.hidden = !matches
+      if (item.wrapper) {
+        item.wrapper.hidden = !matches
+      }
       if (matches) visibleCount++
     })
 
@@ -326,13 +321,20 @@ const statusId = `${id}-status`
 
     // Hide empty groups
     groups.forEach((group) => {
-      const visibleItems = group.querySelectorAll('.launcher-item:not([hidden])')
+      const visibleItems = group.querySelectorAll(
+        '.launcher-switch-wrapper:not([hidden]), .launcher-link-wrapper:not([hidden])'
+      )
       group.hidden = visibleItems.length === 0
     })
 
-    // Show/hide no results message
+    // Show/hide no results message and update text with query
     if (noResultsElement) {
       noResultsElement.hidden = hasVisibleItems
+      // Update the no results text to include the query
+      if (noResultsText && query) {
+        const template = noResultsElement.dataset.template || 'No results for "{query}"'
+        noResultsText.textContent = template.replace('{query}', query)
+      }
     }
 
     // Show/hide end of results message
@@ -340,12 +342,12 @@ const statusId = `${id}-status`
       endOfResultsElement.hidden = !hasVisibleItems
     }
 
-    // Announce results count to screen readers (only when filtering)
+    // Announce results count to screen readers (including 0 results)
     if (query) {
-      updateStatus(dialog, visibleCount)
+      updateStatus(dialog, visibleCount, query)
     }
 
-    // Reset selection
+    // Reset active item to first visible item
     const visibleItems = getVisibleItems(dialog)
     if (visibleItems.length > 0) {
       setActiveItem(dialog, visibleItems[0].element)
@@ -355,7 +357,8 @@ const statusId = `${id}-status`
   }
 
   /**
-   * Set the active/highlighted item
+   * Set the active item using aria-activedescendant
+   * Focus stays on the input, but the item is visually and semantically highlighted
    */
   const setActiveItem = (
     dialog: HTMLDialogElement,
@@ -363,29 +366,31 @@ const statusId = `${id}-status`
   ): void => {
     const input = dialog.querySelector<HTMLInputElement>('.input')
 
-    // Clear previous selection
-    dialog.querySelectorAll('.item[aria-selected="true"]').forEach((element) => {
-      element.setAttribute('aria-selected', 'false')
+    // Clear active state from all items
+    dialog.querySelectorAll('.launcher-switch, .launcher-link').forEach((element) => {
+      element.removeAttribute('data-active')
     })
 
-    // Set new selection
-    item.setAttribute('aria-selected', 'true')
-    item.scrollIntoView({ block: 'nearest' })
+    // Set active state on the item
+    item.setAttribute('data-active', 'true')
 
-    // Update aria-activedescendant
-    if (input) {
+    // Update aria-activedescendant on the input
+    if (input && item.id) {
       input.setAttribute('aria-activedescendant', item.id)
     }
+
+    // Scroll item into view
+    item.scrollIntoView({ block: 'nearest' })
   }
 
   /**
-   * Clear the active item
+   * Clear the active item state
    */
   const clearActiveItem = (dialog: HTMLDialogElement): void => {
     const input = dialog.querySelector<HTMLInputElement>('.input')
 
-    dialog.querySelectorAll('.item[aria-selected="true"]').forEach((element) => {
-      element.setAttribute('aria-selected', 'false')
+    dialog.querySelectorAll('.launcher-switch, .launcher-link').forEach((element) => {
+      element.removeAttribute('data-active')
     })
 
     if (input) {
@@ -394,15 +399,21 @@ const statusId = `${id}-status`
   }
 
   /**
+   * Get the currently active item
+   */
+  const getCurrentItem = (dialog: HTMLDialogElement): HTMLElement | null => {
+    return dialog.querySelector('.launcher-switch[data-active], .launcher-link[data-active]')
+  }
+
+  /**
    * Navigate to previous/next item
+   * Focus stays on input, only aria-activedescendant changes
    */
   const navigateItems = (dialog: HTMLDialogElement, direction: 'up' | 'down'): void => {
     const visibleItems = getVisibleItems(dialog)
     if (visibleItems.length === 0) return
 
-    const currentItem = dialog.querySelector<HTMLAnchorElement | HTMLButtonElement>(
-      '.item[aria-selected="true"]'
-    )
+    const currentItem = getCurrentItem(dialog)
     const currentIndex = currentItem
       ? visibleItems.findIndex((item) => item.element === currentItem)
       : -1
@@ -418,35 +429,36 @@ const statusId = `${id}-status`
   }
 
   /**
-   * Select the currently active item
+   * Activate the currently focused item
    */
-  const selectActiveItem = (dialog: HTMLDialogElement): void => {
-    const activeItem = dialog.querySelector<HTMLAnchorElement | HTMLButtonElement>(
-      '.item[aria-selected="true"]'
-    )
-    if (!activeItem) return
+  const activateCurrentItem = (dialog: HTMLDialogElement): void => {
+    const currentItem = getCurrentItem(dialog) as HTMLAnchorElement | HTMLButtonElement | null
+    if (!currentItem) return
 
-    const type = activeItem.dataset.type
-    const href = activeItem.dataset.href
-    const action = activeItem.dataset.action
+    const isSwitch = currentItem.classList.contains('launcher-switch')
+    const isLink = currentItem.classList.contains('launcher-link')
 
-    if (type === 'navigation' && href) {
-      closeLauncher(dialog)
-      window.location.href = href
-    } else if (type === 'action' && action) {
-      closeLauncher(dialog)
-      document.dispatchEvent(
-        new CustomEvent('launcher:action', {
-          detail: { action },
-        })
-      )
+    if (isSwitch) {
+      const action = currentItem.dataset.action
+      if (action) {
+        // Keep the launcher open for preference toggles so users can change multiple settings
+        document.dispatchEvent(
+          new CustomEvent('launcher:action', {
+            detail: { action },
+          })
+        )
+      }
+    } else if (isLink) {
+      const href = currentItem.dataset.href || currentItem.getAttribute('href')
+      if (href) {
+        closeLauncher(dialog)
+        window.location.href = href
+      }
     }
   }
 
   /**
    * Open the launcher dialog
-   * @param dialog - The dialog element to open
-   * @param trigger - The trigger button that opened the dialog (for focus restoration)
    */
   const openLauncher = (dialog: HTMLDialogElement, trigger?: HTMLButtonElement): void => {
     const input = dialog.querySelector<HTMLInputElement>('.input')
@@ -470,7 +482,7 @@ const statusId = `${id}-status`
       clearBtn.hidden = true
     }
 
-    // Reset filter and select first item
+    // Reset filter and set first item as focusable
     filterItems(dialog, '')
 
     // Set up event listeners
@@ -478,22 +490,22 @@ const statusId = `${id}-status`
     clickController = new AbortController()
 
     // Handle keyboard navigation
+    // Focus stays on input, arrow keys change aria-activedescendant
     document.addEventListener(
       'keydown',
       (event) => {
-        const activeElement = document.activeElement
-        const isInputFocused = activeElement === input
-        const isItemFocused = activeElement?.closest('.item')
-
         if (event.key === 'ArrowDown') {
           event.preventDefault()
           navigateItems(dialog, 'down')
         } else if (event.key === 'ArrowUp') {
           event.preventDefault()
           navigateItems(dialog, 'up')
-        } else if (event.key === 'Enter' && (isInputFocused || isItemFocused)) {
-          event.preventDefault()
-          selectActiveItem(dialog)
+        } else if (event.key === 'Enter') {
+          const currentItem = getCurrentItem(dialog)
+          if (currentItem) {
+            event.preventDefault()
+            activateCurrentItem(dialog)
+          }
         }
       },
       { signal: keydownController.signal }
@@ -622,28 +634,25 @@ const statusId = `${id}-status`
       }
     })
 
-    // Handle item clicks - let native anchors work, handle buttons for actions
+    // Handle item clicks
     dialog.addEventListener('click', (event) => {
       const target = event.target as HTMLElement
-      const item = target.closest<HTMLAnchorElement | HTMLButtonElement>('.item')
+      const switchEl = target.closest<HTMLButtonElement>('.launcher-switch')
+      const linkEl = target.closest<HTMLAnchorElement>('.launcher-link')
 
-      if (item) {
-        const type = item.dataset.type
-        const action = item.dataset.action
-
-        // For action buttons, dispatch custom event and close
-        if (type === 'action' && action) {
-          closeLauncher(dialog)
+      if (switchEl) {
+        const action = switchEl.dataset.action
+        if (action) {
+          // Keep the launcher open for preference toggles so users can change multiple settings
           document.dispatchEvent(
             new CustomEvent('launcher:action', {
               detail: { action },
             })
           )
         }
-        // For navigation anchors, just close the dialog (navigation happens natively)
-        else if (type === 'navigation') {
-          closeLauncher(dialog)
-        }
+      } else if (linkEl) {
+        // Let native link behavior work, just close the dialog
+        closeLauncher(dialog)
       }
     })
 
@@ -658,8 +667,10 @@ const statusId = `${id}-status`
       lastPointerY = event.clientY
 
       const target = event.target as HTMLElement
-      const item = target.closest<HTMLAnchorElement | HTMLButtonElement>('.item')
-      const wrapper = item?.closest<HTMLLIElement>('.launcher-item')
+      const item = target.closest<HTMLAnchorElement | HTMLButtonElement>(
+        '.launcher-switch, .launcher-link'
+      )
+      const wrapper = item?.closest<HTMLElement>('.launcher-switch-wrapper, .launcher-link-wrapper')
 
       if (item && wrapper && !wrapper.hidden) {
         setActiveItem(dialog, item)
