@@ -37,9 +37,10 @@ accessible-astro-launcher/
 │   │   └── launcher/
 │   │       ├── Launcher.astro          # Main dialog component
 │   │       ├── LauncherTrigger.astro   # Search field trigger
-│   │       ├── LauncherList.astro      # Results list wrapper
-│   │       ├── LauncherItem.astro      # Individual item (link or action)
-│   │       └── LauncherGroup.astro     # Optional item grouping
+│   │       ├── LauncherPreferences.astro # Fieldset wrapper for preference switches
+│   │       ├── LauncherSwitch.astro      # Toggle switch item
+│   │       ├── LauncherNav.astro         # Navigation wrapper with heading
+│   │       └── LauncherLink.astro        # Semantic link item
 │   ├── styles/
 │   │   └── index.css                   # All component styles
 │   └── types/
@@ -80,41 +81,55 @@ A trigger button that opens the launcher with keyboard shortcut display.
 - `gradientBorder?: boolean` - Animated gradient border effect
 - `class?: string` - Additional CSS classes
 
-### LauncherList
+### LauncherPreferences
 
-Wrapper for items with proper ARIA listbox role.
+Fieldset wrapper for preference switches.
 
 **Props:**
 
 - `class?: string` - Additional CSS classes
 
-### LauncherItem
+### LauncherSwitch
 
-Individual launcher item - either a navigation link or action button.
+Toggle switch item for preferences.
 
 **Props:**
 
-- `type: 'navigation' | 'action'` - Item type (required)
 - `label: string` - Display text (required)
-- `href?: string` - URL for navigation items
 - `onAction?: string` - Action identifier for action items
-- `pressed?: boolean` - Initial pressed state for toggle actions
+- `pressed?: boolean` - Initial pressed state
 - `keywords?: string[]` - Additional search keywords
-- `typeLabel?: string` - i18n label for type indicator (default: "Go to" / "Run")
+- `class?: string` - Additional CSS classes
+
+### LauncherNav
+
+Navigation wrapper with heading.
+
+**Props:**
+
+- `label: string` - Group heading text (required)
+- `headingLevel?: 2 | 3 | 4 | 5 | 6` - Heading level (default: 3)
+- `class?: string` - Additional CSS classes
+
+**Slots:**
+
+- `default` - LauncherLink items
+
+### LauncherLink
+
+Semantic link item for navigation.
+
+**Props:**
+
+- `label: string` - Display text (required)
+- `href: string` - URL for navigation
+- `keywords?: string[]` - Additional search keywords
+- `typeLabel?: string` - i18n label for type indicator (default: "Go to")
 - `class?: string` - Additional CSS classes
 
 **Slots:**
 
 - `icon` - Custom icon for navigation items
-
-### LauncherGroup
-
-Optional grouping wrapper for items.
-
-**Props:**
-
-- `label: string` - Group heading text (required)
-- `class?: string` - Additional CSS classes
 
 ## Dev Environment Setup
 
@@ -201,7 +216,7 @@ Since this is a library package, testing happens in consuming projects:
 ### Component Architecture
 
 - **Single Responsibility**: Each component has one clear purpose
-- **Composition**: Components can be nested (Launcher > LauncherList > LauncherGroup > LauncherItem)
+- **Composition**: Components can be nested (Launcher > LauncherPreferences > LauncherSwitch, Launcher > LauncherNav > LauncherLink)
 - **Props**: Use Astro props with TypeScript interfaces
 - **Styles**: Component styles in `src/styles/index.css`
 - **No Dependencies**: Pure Astro components only
