@@ -114,12 +114,31 @@ const dataAttrs = {
     })
   }
 
-  // Set up listeners for each mapped event
-  Object.entries(eventActionMap).forEach(([eventName, action]) => {
-    document.addEventListener(eventName, ((event: CustomEvent<{ enabled: boolean }>) => {
-      updateSwitchState(action, event.detail.enabled)
-    }) as EventListener)
-  })
+  let listenerController = new AbortController()
+
+  const bindListeners = () => {
+    const { signal } = listenerController
+
+    // Set up listeners for each mapped event
+    Object.entries(eventActionMap).forEach(([eventName, action]) => {
+      document.addEventListener(
+        eventName,
+        ((event: CustomEvent<{ enabled: boolean }>) => {
+          updateSwitchState(action, event.detail.enabled)
+        }) as EventListener,
+        { signal }
+      )
+    })
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initializePreferenceStates, { signal })
+
+    // Re-sync after Astro view transitions
+    document.addEventListener('astro:page-load', initializePreferenceStates, { signal })
+
+    // Also initialize when launcher opens (preference APIs should be ready by then)
+    document.addEventListener('launcher:open', initializePreferenceStates, { signal })
+  }
 
   /**
    * Initialize all preference states
@@ -136,14 +155,18 @@ const dataAttrs = {
     }
   }
 
-  // Initialize on page load
-  document.addEventListener('DOMContentLoaded', initializePreferenceStates)
+  bindListeners()
+  initializePreferenceStates()
 
-  // Re-sync after Astro view transitions
-  document.addEventListener('astro:page-load', initializePreferenceStates)
+  document.addEventListener('astro:before-swap', () => {
+    listenerController.abort()
+  })
 
-  // Also initialize when launcher opens (preference APIs should be ready by then)
-  document.addEventListener('launcher:open', initializePreferenceStates)
+  document.addEventListener('astro:after-swap', () => {
+    listenerController = new AbortController()
+    bindListeners()
+    initializePreferenceStates()
+  })
 </script>
 
 <style>

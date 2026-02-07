@@ -87,6 +87,7 @@ Fieldset wrapper for preference switches.
 
 **Props:**
 
+- `label: string` - Group heading text (required)
 - `class?: string` - Additional CSS classes
 
 ### LauncherSwitch
@@ -96,8 +97,8 @@ Toggle switch item for preferences.
 **Props:**
 
 - `label: string` - Display text (required)
-- `onAction?: string` - Action identifier for action items
-- `pressed?: boolean` - Initial pressed state
+- `onAction: string` - Action identifier for action items
+- `checked?: boolean` - Initial checked state (maps to aria-checked)
 - `keywords?: string[]` - Additional search keywords
 - `class?: string` - Additional CSS classes
 
@@ -342,7 +343,7 @@ type(scope): subject
 
 **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
-**Scopes**: `launcher`, `trigger`, `item`, `group`, `list`, `styles`, `types`
+**Scopes**: `launcher`, `trigger`, `preferences`, `switch`, `nav`, `link`, `styles`, `types`
 
 **Examples**:
 
