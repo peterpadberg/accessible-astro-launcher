@@ -17,7 +17,7 @@ interface Props {
   id?: string
   /**
    * Placeholder text shown in the trigger
-   * @default "Search or use commands..."
+   * @default "Search"
    */
   placeholder?: string
   /**
@@ -53,7 +53,7 @@ interface Props {
 const {
   launcherId,
   id,
-  placeholder = 'Search or use commands...',
+  placeholder = 'Search',
   shortcutKey = 'K',
   compact = false,
   iconOnly = false,
@@ -63,12 +63,12 @@ const {
 } = Astro.props
 ---
 
-<div class:list={['launcher-trigger', gradientBorder && 'gradient-border']}>
+<div class:list={['launcher-trigger', gradientBorder && 'gradient-border', className]}>
   <button
     type="button"
     class="trigger"
     id={id}
-    class:list={[compact && 'compact', iconOnly && 'icon-only', className]}
+    class:list={[compact && 'compact', iconOnly && 'icon-only']}
     aria-haspopup="dialog"
     data-launcher-target={launcherId}
     aria-label={placeholder}
@@ -88,8 +88,7 @@ const {
           stroke="currentColor"
           stroke-width="2"
           stroke-linecap="round"
-          stroke-linejoin="round"
-        ></path>
+          stroke-linejoin="round"></path>
       </svg>
       {compact || iconOnly ? null : <span class="placeholder">{placeholder}</span>}
     </span>

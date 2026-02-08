@@ -17,7 +17,7 @@ Check `package.json` for current version and dependencies.
 - **Shared styles**: Exports `index.css` with all component styles
 - **TypeScript**: Full type definitions in `src/types/index.d.ts`
 - **Modern CSS**: Uses logical properties, custom properties, `light-dark()` for theming
-- **ARIA Combobox Pattern**: Follows WAI-ARIA guidelines for command palettes
+- **ARIA Guidance**: Uses semantic HTML and minimal ARIA for command palettes
 
 ## Project Purpose
 
@@ -37,9 +37,10 @@ accessible-astro-launcher/
 │   │   └── launcher/
 │   │       ├── Launcher.astro          # Main dialog component
 │   │       ├── LauncherTrigger.astro   # Search field trigger
-│   │       ├── LauncherList.astro      # Results list wrapper
-│   │       ├── LauncherItem.astro      # Individual item (link or action)
-│   │       └── LauncherGroup.astro     # Optional item grouping
+│   │       ├── LauncherPreferences.astro # Fieldset wrapper for preference switches
+│   │       ├── LauncherSwitch.astro      # Toggle switch item
+│   │       ├── LauncherNav.astro         # Navigation wrapper with heading
+│   │       └── LauncherLink.astro        # Semantic link item
 │   ├── styles/
 │   │   └── index.css                   # All component styles
 │   └── types/
@@ -61,8 +62,7 @@ The main dialog component containing search input and results.
 **Props:**
 
 - `id: string` - Unique identifier (required, must match `launcherId` on triggers)
-- `labels?: LauncherLabels` - i18n labels object
-- `showASCIIArt?: boolean` - Show fun ASCII art in messages (default: false)
+- `labels?: LauncherLabels` - i18n labels object (exported type)
 - `class?: string` - Additional CSS classes
 
 ### LauncherTrigger
@@ -73,48 +73,69 @@ A trigger button that opens the launcher with keyboard shortcut display.
 
 - `launcherId: string` - ID of the launcher to open (required)
 - `id?: string` - Optional trigger element ID
-- `placeholder?: string` - Placeholder text (default: "Search or use commands...")
+- `placeholder?: string` - Placeholder text (default: "Search")
 - `shortcutKey?: string` - Keyboard shortcut key display (default: "K")
 - `compact?: boolean` - Compact mode without placeholder text
 - `iconOnly?: boolean` - Icon-only mode
 - `gradientBorder?: boolean` - Animated gradient border effect
 - `class?: string` - Additional CSS classes
 
-### LauncherList
+### LauncherPreferences
 
-Wrapper for items with proper ARIA listbox role.
-
-**Props:**
-
-- `class?: string` - Additional CSS classes
-
-### LauncherItem
-
-Individual launcher item - either a navigation link or action button.
-
-**Props:**
-
-- `type: 'navigation' | 'action'` - Item type (required)
-- `label: string` - Display text (required)
-- `href?: string` - URL for navigation items
-- `onAction?: string` - Action identifier for action items
-- `pressed?: boolean` - Initial pressed state for toggle actions
-- `keywords?: string[]` - Additional search keywords
-- `typeLabel?: string` - i18n label for type indicator (default: "Go to" / "Run")
-- `class?: string` - Additional CSS classes
-
-**Slots:**
-
-- `icon` - Custom icon for navigation items
-
-### LauncherGroup
-
-Optional grouping wrapper for items.
+Fieldset wrapper for preference switches.
 
 **Props:**
 
 - `label: string` - Group heading text (required)
 - `class?: string` - Additional CSS classes
+- `[key: string]: string | undefined` - Additional HTML attributes to apply to the fieldset
+
+### LauncherSwitch
+
+Toggle switch item for preferences.
+
+**Props:**
+
+- `label: string` - Display text (required)
+- `onAction: string` - Action identifier for action items
+- `checked?: boolean` - Initial checked state (maps to aria-checked)
+- `keywords?: string[]` - Additional search keywords
+- `class?: string` - Additional CSS classes
+- `[key: string]: string | string[] | boolean | undefined` - Additional HTML attributes to apply to the wrapper
+
+### LauncherNav
+
+Navigation wrapper with heading.
+
+**Props:**
+
+- `label: string` - Group heading text (required)
+- `headingLevel?: 2 | 3 | 4 | 5 | 6` - Heading level (default: 3)
+- `class?: string` - Additional CSS classes
+- `[key: string]: string | number | undefined` - Additional HTML attributes to apply to the nav element
+
+**Slots:**
+
+- `default` - LauncherLink items
+
+### LauncherLink
+
+Semantic link item for navigation.
+
+**Props:**
+
+- `label: string` - Display text (required)
+- `href: string` - URL for navigation
+- `keywords?: string[]` - Additional search keywords
+- `typeLabel?: string` - i18n label for type indicator (default: "Go to")
+- `class?: string` - Additional CSS classes
+- `[key: string]: string | string[] | undefined` - Additional HTML attributes to apply to the anchor (e.g., target, rel, aria-*)
+
+**Slots:**
+
+- `icon` - Custom icon for navigation items
+
+Extra attributes passed to `LauncherLink` are forwarded to the rendered anchor element.
 
 ## Dev Environment Setup
 
@@ -201,7 +222,7 @@ Since this is a library package, testing happens in consuming projects:
 ### Component Architecture
 
 - **Single Responsibility**: Each component has one clear purpose
-- **Composition**: Components can be nested (Launcher > LauncherList > LauncherGroup > LauncherItem)
+- **Composition**: Components can be nested (Launcher > LauncherPreferences > LauncherSwitch, Launcher > LauncherNav > LauncherLink)
 - **Props**: Use Astro props with TypeScript interfaces
 - **Styles**: Component styles in `src/styles/index.css`
 - **No Dependencies**: Pure Astro components only
@@ -230,7 +251,7 @@ Since this is a library package, testing happens in consuming projects:
 
 ## Accessibility Requirements
 
-This component follows **WCAG 2.2 AA** standards with ARIA combobox pattern:
+This component follows **WCAG 2.2 AA** standards with a semantic HTML approach:
 
 ### Essential Features
 
@@ -243,10 +264,8 @@ This component follows **WCAG 2.2 AA** standards with ARIA combobox pattern:
 
 2. **ARIA Implementation**:
    - Dialog with `aria-modal="true"`
-   - Input with `role="combobox"`, `aria-controls`, `aria-activedescendant`
-   - List with `role="listbox"`
-   - Items with `role="option"`, `aria-selected`
-   - Groups with `role="group"`, `aria-labelledby`
+   - Input uses `aria-controls`, `aria-owns` and `aria-activedescendant` for active item tracking
+   - Semantic fieldset/legend for preference groups
    - Live region for results count announcements
 
 3. **Focus Management**:
@@ -327,13 +346,13 @@ type(scope): subject
 
 **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
-**Scopes**: `launcher`, `trigger`, `item`, `group`, `list`, `styles`, `types`
+**Scopes**: `launcher`, `trigger`, `preferences`, `switch`, `nav`, `link`, `styles`, `types`
 
 **Examples**:
 
-- `feat(item): add typeLabel prop for i18n`
+- `feat(switch): add typeLabel prop for i18n`
 - `fix(launcher): improve search debouncing`
-- `a11y(item): enhance LED indicator contrast`
+- `a11y(switch): enhance LED indicator contrast`
 
 ## PR Instructions
 
@@ -378,7 +397,6 @@ This package is used by:
 
 - **accessible-astro-starter**: Primary consumer, showcases launcher in header
 - **accessible-astro-dashboard**: Dashboard with launcher integration
-- **accessible-astro-docs**: Documents the launcher with live examples
 
 Check each project's `package.json` to see which version they're currently using.
 

@@ -1,13 +1,14 @@
 ---
 /**
- * LauncherGroup Component
+ * LauncherPreferences Component
  *
- * @description An optional grouping wrapper for launcher items with a label
+ * @description A fieldset wrapper for preference toggle switches with a legend.
+ * Uses semantic HTML structure for accessibility.
  */
 
 interface Props {
   /**
-   * Group label displayed as a heading
+   * Group label displayed as the fieldset legend
    */
   label: string
   /**
@@ -15,38 +16,44 @@ interface Props {
    */
   class?: string
   /**
-   * HTML attributes to spread on the group
+   * HTML attributes to spread on the fieldset
    */
   [key: string]: string | undefined
 }
 
 const { label, class: className, ...rest } = Astro.props
 
-// Generate unique ID for aria-labelledby
-const groupId = `launcher-group-${Math.random().toString(36).substring(2, 9)}`
+// Generate unique ID for filtering
+const groupId = `launcher-preferences-${Math.random().toString(36).substring(2, 9)}`
 ---
 
-<div class:list={['launcher-group', className]} role="group" aria-labelledby={groupId} {...rest}>
-  <span id={groupId} class="label">{label}</span>
-  <ul role="presentation" class="items">
+<fieldset
+  class:list={['launcher-preferences', className]}
+  data-launcher-group={groupId}
+  {...rest}
+>
+  <legend class="legend">{label}</legend>
+  <div class="items">
     <slot />
-  </ul>
-</div>
+  </div>
+</fieldset>
 
 <style>
-  :where(.launcher-group) {
+  :where(.launcher-preferences) {
     display: flex;
     flex-direction: column;
     gap: var(--launcher-space-xs);
+    margin: 0;
     margin-block-start: var(--launcher-space-md);
-    list-style: none;
+    border: none;
+    padding: 0;
   }
 
-  :where(.launcher-group:first-child) {
+  :where(.launcher-preferences:first-child) {
     margin-block-start: var(--launcher-space-lg);
   }
 
-  :where(.label) {
+  :where(.legend) {
     display: block;
     padding-inline: var(--launcher-space-md);
     padding-block-start: var(--launcher-space-xs);
@@ -62,6 +69,5 @@ const groupId = `launcher-group-${Math.random().toString(36).substring(2, 9)}`
     display: flex;
     flex-direction: column;
     padding-inline: var(--launcher-space-xs);
-    list-style: none;
   }
 </style>
