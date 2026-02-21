@@ -28,28 +28,22 @@ jobs:
             gh release delete "$tag" --yes --cleanup-tag
           done
           
-          # Get the last published release tag for changelog generation
+          # Get the last published release tag
           LAST_TAG=$(gh release list --limit 1 --exclude-drafts --json tagName | jq -r '.[0].tagName' 2>/dev/null || echo "")
           
           echo "Creating new draft release"
           
-          # Generate release notes for new draft
           if [ -n "$LAST_TAG" ]; then
             echo "Generating changelog since last release: $LAST_TAG"
-            gh api repos/${{ github.repository }}/releases/generate-notes \
-              -f tag_name="draft" \
-              -f target_commitish="${{ github.sha }}" \
-              -f previous_tag_name="$LAST_TAG" \
-              | jq -r .body > /tmp/changelog.md
+            gh release create "draft" \
+              --draft \
+              --title "Next Release" \
+              --generate-notes \
+              --notes-start-tag "$LAST_TAG"
           else
             echo "No previous release found, generating full changelog"
-            gh api repos/${{ github.repository }}/releases/generate-notes \
-              -f tag_name="draft" \
-              -f target_commitish="${{ github.sha }}" \
-              | jq -r .body > /tmp/changelog.md
+            gh release create "draft" \
+              --draft \
+              --title "Next Release" \
+              --generate-notes
           fi
-          
-          gh release create "draft" \
-            --draft \
-            --title "Next Release" \
-            --notes-file /tmp/changelog.md
