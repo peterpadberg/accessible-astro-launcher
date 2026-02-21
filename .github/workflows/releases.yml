@@ -29,11 +29,11 @@ jobs:
           done
           
           # Get the last published release tag
-          LAST_TAG=$(gh release list --limit 1 --exclude-drafts --json tagName | jq -r '.[0].tagName' 2>/dev/null || echo "")
+          LAST_TAG=$(gh release list --limit 1 --exclude-drafts --json tagName 2>/dev/null | jq -r '.[0].tagName // empty')
           
           echo "Creating new draft release"
           
-          if [ -n "$LAST_TAG" ]; then
+          if [ -n "$LAST_TAG" ] && [ "$LAST_TAG" != "null" ]; then
             echo "Generating changelog since last release: $LAST_TAG"
             gh release create "draft" \
               --draft \
