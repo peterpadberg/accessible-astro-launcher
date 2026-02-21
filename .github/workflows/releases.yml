@@ -30,9 +30,28 @@ jobs:
           skip-tag: true
           config-file-path: ".changelogrc.cjs"
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2.5.0
-        with:
-          body: ${{ steps.changelog.outputs.clean-changelog }}
-          draft: true
-          name: "Next Release"
+      - name: Update or Create Draft Release
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if a draft release already exists
+          DRAFT_TAG=$(gh release list --limit 100 --json isDraft,tagName | jq -r '.[] | select(.isDraft == true) | .tagName' | head -n 1)
+          
+          # Save changelog to temp file to avoid escaping issues
+          cat > /tmp/changelog.md << 'EOF'
+          ${{ steps.changelog.outputs.clean_changelog }}
+          EOF
+          
+          if [ -n "$DRAFT_TAG" ]; then
+            echo "Updating existing draft release (tag: $DRAFT_TAG)"
+            gh release edit "$DRAFT_TAG" \
+              --title "Next Release" \
+              --notes-file /tmp/changelog.md
+          else
+            echo "Creating new draft release"
+            gh release create "draft" \
+              --draft \
+              --title "Next Release" \
+              --notes-file /tmp/changelog.md
+          fi

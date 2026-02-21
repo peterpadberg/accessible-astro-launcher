@@ -35,6 +35,6 @@ module.exports = {
   {{~hash}}
 {{~/if}}
 
-{{~!-- author --}}{{#if committerDate}} by @{{#if authorLogin}}{{authorLogin}}{{else}}{{authorName}}{{/if}}{{/if}}
+{{~!-- author --}}{{#if committer}} by {{committer.name}}{{/if}}
 `,
 }
