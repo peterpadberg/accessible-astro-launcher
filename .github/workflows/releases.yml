@@ -23,3 +23,6 @@ jobs:
           body: ${{ steps.generate-changelog.outputs.changelog }}
           draft: true
           name: "Next Release"
+      
+      - name: Echo release notes
+        run: echo ${{ steps.generate-changelog.outputs.changelog }}
