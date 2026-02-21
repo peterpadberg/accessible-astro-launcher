@@ -17,21 +17,109 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for changelog generation
 
-      - name: Generate Changelog
+      - name: Generate Changelog with Authors
         id: changelog
-        uses: TriPSs/conventional-changelog-action@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          output-file: false
-          skip-version-file: true
-          skip-commit: true
-          skip-on-empty: true
-          skip-git-pull: true
-          skip-tag: true
-          config-file-path: ".changelogrc.cjs"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the last release tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tags found, using all commits"
+            COMMITS=$(git log --pretty=format:"%H|%an|%s")
+          else
+            echo "Found last tag: $LAST_TAG"
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%H|%an|%s")
+          fi
+          
+          # Initialize changelog sections
+          FEATURES=""
+          FIXES=""
+          A11Y=""
+          DOCS=""
+          STYLE=""
+          REFACTOR=""
+          PERF=""
+          TESTS=""
+          CHORES=""
+          
+          # Parse commits and categorize
+          while IFS='|' read -r hash author message; do
+            SHORT_HASH="${hash:0:7}"
+            COMMIT_LINK="([${SHORT_HASH}](https://github.com/${{ github.repository }}/commit/${hash}))"
+            
+            case "$message" in
+              feat:*|feat\(*) 
+                FEATURES="${FEATURES}\n* ${message#feat:} ${COMMIT_LINK} by ${author}"
+                ;;
+              fix:*|fix\(*)
+                FIXES="${FIXES}\n* ${message#fix:} ${COMMIT_LINK} by ${author}"
+                ;;
+              a11y:*|a11y\(*)
+                A11Y="${A11Y}\n* ${message#a11y:} ${COMMIT_LINK} by ${author}"
+                ;;
+              docs:*|docs\(*)
+                DOCS="${DOCS}\n* ${message#docs:} ${COMMIT_LINK} by ${author}"
+                ;;
+              style:*|style\(*)
+                STYLE="${STYLE}\n* ${message#style:} ${COMMIT_LINK} by ${author}"
+                ;;
+              refactor:*|refactor\(*)
+                REFACTOR="${REFACTOR}\n* ${message#refactor:} ${COMMIT_LINK} by ${author}"
+                ;;
+              perf:*|perf\(*)
+                PERF="${PERF}\n* ${message#perf:} ${COMMIT_LINK} by ${author}"
+                ;;
+              test:*|test\(*)
+                TESTS="${TESTS}\n* ${message#test:} ${COMMIT_LINK} by ${author}"
+                ;;
+              chore:*|chore\(*)
+                CHORES="${CHORES}\n* ${message#chore:} ${COMMIT_LINK} by ${author}"
+                ;;
+            esac
+          done <<< "$COMMITS"
+          
+          # Build changelog
+          CHANGELOG="## What's Changed\n"
+          
+          if [ -n "$FEATURES" ]; then
+            CHANGELOG="${CHANGELOG}\n### 🚀 Features\n${FEATURES}\n"
+          fi
+          if [ -n "$FIXES" ]; then
+            CHANGELOG="${CHANGELOG}\n### 🐛 Bug Fixes\n${FIXES}\n"
+          fi
+          if [ -n "$A11Y" ]; then
+            CHANGELOG="${CHANGELOG}\n### ♿ Accessibility\n${A11Y}\n"
+          fi
+          if [ -n "$DOCS" ]; then
+            CHANGELOG="${CHANGELOG}\n### 📚 Documentation\n${DOCS}\n"
+          fi
+          if [ -n "$STYLE" ]; then
+            CHANGELOG="${CHANGELOG}\n### 🎨 Styling\n${STYLE}\n"
+          fi
+          if [ -n "$REFACTOR" ]; then
+            CHANGELOG="${CHANGELOG}\n### ♻️ Refactoring\n${REFACTOR}\n"
+          fi
+          if [ -n "$PERF" ]; then
+            CHANGELOG="${CHANGELOG}\n### ⚡ Performance\n${PERF}\n"
+          fi
+          if [ -n "$TESTS" ]; then
+            CHANGELOG="${CHANGELOG}\n### 🧪 Tests\n${TESTS}\n"
+          fi
+          if [ -n "$CHORES" ]; then
+            CHANGELOG="${CHANGELOG}\n### 🔧 Maintenance\n${CHORES}\n"
+          fi
+          
+          # Save to temp file
+          echo -e "$CHANGELOG" > /tmp/changelog.md
+          
+          # Also output for GitHub Actions
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Update or Create Draft Release
-        if: ${{ steps.changelog.outputs.skipped == 'false' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
