@@ -26,4 +26,5 @@ jobs:
           name: "Next Release"
       
       - name: Echo release notes
-        run: echo ${{ steps.generate-changelog.outputs.changelog }}
+        run: echo "${{ steps.generate-changelog.outputs.changelog }}"
+        
