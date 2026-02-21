@@ -1,4 +1,4 @@
-name: Draft Release
+name: Generate Changelog
 
 on:
   push:
@@ -9,9 +9,29 @@ permissions:
   contents: write
 
 jobs:
-  draft-release:
+  changelog:
     runs-on: ubuntu-latest
     steps:
-      - uses: release-drafter/release-drafter@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@latest
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+
+      - name: Generate Changelog
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          output-file: false
+          skip-version-file: true
+          skip-commit: true
+          skip-on-empty: true
+          skip-git-pull: false
+          skip-tag: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2.5.0
+        with:
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: true
+          name: "Next Release"
