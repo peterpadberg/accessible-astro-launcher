@@ -15,40 +15,57 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0  # Fetch all history for changelog generation
-
-      - name: Generate Changelog
-        id: changelog
-        uses: TriPSs/conventional-changelog-action@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          output-file: false
-          skip-version-file: true
-          skip-commit: true
-          skip-on-empty: true
-          skip-git-pull: true
-          skip-tag: true
+          fetch-depth: 0
 
       - name: Update or Create Draft Release
-        if: ${{ steps.changelog.outputs.skipped == 'false' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Check if a draft release already exists
           DRAFT_TAG=$(gh release list --limit 100 --json isDraft,tagName | jq -r '.[] | select(.isDraft == true) | .tagName' | head -n 1)
           
-          # Save changelog to temp file to avoid escaping issues
-          cat > /tmp/changelog.md << 'EOF'
-          ${{ steps.changelog.outputs.clean_changelog }}
-          EOF
+          # Get the last published release tag for changelog generation
+          LAST_TAG=$(gh release list --limit 1 --exclude-drafts --json tagName | jq -r '.[0].tagName' 2>/dev/null || echo "")
           
           if [ -n "$DRAFT_TAG" ]; then
             echo "Updating existing draft release (tag: $DRAFT_TAG)"
+            
+            # Generate release notes
+            if [ -n "$LAST_TAG" ]; then
+              gh release view "$DRAFT_TAG" --json body -q .body > /tmp/old_notes.md || true
+              gh api repos/${{ github.repository }}/releases/generate-notes \
+                -f tag_name="$DRAFT_TAG" \
+                -f target_commitish="${{ github.sha }}" \
+                -f previous_tag_name="$LAST_TAG" \
+                | jq -r .body > /tmp/changelog.md
+            else
+              # No previous release, generate from all commits
+              gh api repos/${{ github.repository }}/releases/generate-notes \
+                -f tag_name="$DRAFT_TAG" \
+                -f target_commitish="${{ github.sha }}" \
+                | jq -r .body > /tmp/changelog.md
+            fi
+            
             gh release edit "$DRAFT_TAG" \
               --title "Next Release" \
               --notes-file /tmp/changelog.md
           else
             echo "Creating new draft release"
+            
+            # Generate release notes for new draft
+            if [ -n "$LAST_TAG" ]; then
+              gh api repos/${{ github.repository }}/releases/generate-notes \
+                -f tag_name="draft" \
+                -f target_commitish="${{ github.sha }}" \
+                -f previous_tag_name="$LAST_TAG" \
+                | jq -r .body > /tmp/changelog.md
+            else
+              gh api repos/${{ github.repository }}/releases/generate-notes \
+                -f tag_name="draft" \
+                -f target_commitish="${{ github.sha }}" \
+                | jq -r .body > /tmp/changelog.md
+            fi
+            
             gh release create "draft" \
               --draft \
               --title "Next Release" \
