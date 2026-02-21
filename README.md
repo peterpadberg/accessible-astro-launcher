@@ -18,24 +18,6 @@ A powerful, accessible command palette/launcher component for [Astro](https://as
 
 ## Features
 
-
-
-- **Accessible by default**: Semantic HTML with proper ARIA patterns (`role="switch"` for toggles, native `<a>` for links)
-- **Keyboard navigation**: Open with `Cmd/Ctrl + K`, navigate with arrow keys, select with `Enter`, close with `Escape`
-- **Continuous typing**: Focus stays on input via `aria-activedescendant` - type to filter at any point while navigating
-- **Screen reader support**: Proper role announcements ("switch", "link"), live region for results count with search query
-- **Quick search**: Instant client-side fuzzy search across labels and keywords
-- **Navigation links**: Semantic `<a>` elements with custom icons and external link support
-- **Preference switches**: Toggle buttons with `role="switch"`, `aria-checked`, and LED-style indicators
-- **Preference toggles stay open**: Change multiple preferences without reopening the launcher
-- **Preference sync**: Automatic sync with `accessible-astro-components` toggles (DarkMode, HighContrast, ReducedMotion)
-- **Multiple triggers**: Place triggers anywhere - all open the same launcher
-- **Dark mode**: Automatic light/dark theming via `light-dark()` CSS function
-- **Customizable**: Extensive styling through `--launcher-*` CSS custom properties
-- **i18n ready**: All text labels customizable via props (including `{query}` placeholders)
-- **Zero dependencies**: Pure Astro components
-- **TypeScript**: Full type support and documentation
-
 ## Getting started
 
 ```bash
