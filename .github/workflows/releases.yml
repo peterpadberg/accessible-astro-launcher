@@ -9,6 +9,8 @@ jobs:
   pre-release:
     runs-on: "ubuntu-latest"
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
       - uses: softprops/action-gh-release@v2.5.0
         with:
           prerelease: true
