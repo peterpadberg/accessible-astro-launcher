@@ -28,7 +28,7 @@ jobs:
           skip-on-empty: true
           skip-git-pull: true
           skip-tag: true
-          config-file-path: ".changelogrc.js"
+          config-file-path: ".changelogrc.cjs"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.5.0
