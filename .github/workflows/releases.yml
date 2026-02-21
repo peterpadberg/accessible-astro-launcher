@@ -26,12 +26,13 @@ jobs:
           skip-version-file: true
           skip-commit: true
           skip-on-empty: true
-          skip-git-pull: false
+          skip-git-pull: true
           skip-tag: true
+          config-file-path: ".changelogrc.js"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.5.0
         with:
-          body: ${{ steps.changelog.outputs.changelog }}
+          body: ${{ steps.changelog.outputs.clean-changelog }}
           draft: true
           name: "Next Release"
