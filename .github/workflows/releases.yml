@@ -17,18 +17,18 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for changelog generation
 
-      # - name: Generate Changelog
-      #   id: changelog
-      #   uses: TriPSs/conventional-changelog-action@v6
-      #   with:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     output-file: false
-      #     skip-version-file: true
-      #     skip-commit: true
-      #     skip-on-empty: true
-      #     skip-git-pull: true
-      #     skip-tag: true
-      #     config-file-path: ".changelogrc.cjs"
+      - name: Generate Changelog
+        id: changelog
+        uses: TriPSs/conventional-changelog-action@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          output-file: false
+          skip-version-file: true
+          skip-commit: true
+          skip-on-empty: true
+          skip-git-pull: true
+          skip-tag: true
+          config-file-path: ".changelogrc.cjs"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.5.0
@@ -36,4 +36,3 @@ jobs:
           body: ${{ steps.changelog.outputs.clean-changelog }}
           draft: true
           name: "Next Release"
-          generate-release-notes: true
