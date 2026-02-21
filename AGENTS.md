@@ -23,6 +23,8 @@ Check `package.json` for current version and dependencies.
 
 This is the **command palette/launcher component** for the Accessible Astro ecosystem:
 
+
+
 - **Target Audience**: Developers wanting keyboard-driven navigation in their Astro sites
 - **Features**: Quick search, navigation items, action items, preference toggles
 - **Integration**: Works seamlessly with `accessible-astro-components` preference toggles
